@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { anthropic, CONCIERGE_MODEL } from "@/lib/anthropic";
+import type OpenAI from "openai";
+import { groq, CONCIERGE_MODEL } from "@/lib/anthropic";
 import { buildSystemPrompt, captureLeadTool, type CapturedLead } from "@/lib/conciergePrompt";
 import { getPackages } from "@/lib/data";
 import { prisma } from "@/lib/prisma";
@@ -7,13 +8,11 @@ import { chatSchema } from "@/lib/validation";
 import { rateLimit, clientIp } from "@/lib/rateLimit";
 import { notifyOwner, leadEmailHtml } from "@/lib/email";
 import { PACKAGES } from "@/lib/packages";
-import type Anthropic from "@anthropic-ai/sdk";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function POST(req: Request) {
-  // Rate limit per session + IP (the concierge is the most abuse-prone route).
   const body = await req.json().catch(() => null);
   const parsed = chatSchema.safeParse(body);
   if (!parsed.success) {
@@ -26,7 +25,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Too many messages. Please slow down." }, { status: 429 });
   }
 
-  if (!process.env.ANTHROPIC_API_KEY) {
+  if (!process.env.GROQ_API_KEY) {
     return NextResponse.json(
       { reply: "Our chat helper is just waking up — please tap the green WhatsApp button or call us and the team will help right away!", captured: false },
       { status: 200 },
@@ -35,60 +34,49 @@ export async function POST(req: Request) {
 
   const packages = await getPackages();
   const system = buildSystemPrompt(packages);
+  const client = groq();
 
-  const apiMessages: Anthropic.MessageParam[] = messages.map((m) => ({
-    role: m.role,
+  const apiMessages: OpenAI.ChatCompletionMessageParam[] = messages.map((m) => ({
+    role: m.role as "user" | "assistant",
     content: m.content,
   }));
 
   try {
-    const client = anthropic();
-
-    // First turn — system block is marked cacheable (it repeats every call).
-    let res = await client.messages.create({
+    let res = await client.chat.completions.create({
       model: CONCIERGE_MODEL,
       max_tokens: 600,
-      system: [{ type: "text", text: system, cache_control: { type: "ephemeral" } }],
-      tools: [captureLeadTool as Anthropic.Tool],
-      messages: apiMessages,
+      messages: [{ role: "system", content: system }, ...apiMessages],
+      tools: [captureLeadTool],
     });
 
     let captured = false;
+    let reply = "";
 
-    // If Bricky called capture_lead, persist it and feed back a tool_result
-    // so the model can write its closing reply.
-    const toolUse = res.content.find((c) => c.type === "tool_use") as Anthropic.ToolUseBlock | undefined;
-    if (toolUse && toolUse.name === "capture_lead") {
-      const lead = toolUse.input as CapturedLead;
+    const rawToolCall = res.choices[0].message.tool_calls?.[0];
+    const toolCall = rawToolCall as OpenAI.ChatCompletionMessageToolCall | undefined;
+
+    if (toolCall && "function" in toolCall && toolCall.function.name === "capture_lead") {
+      const lead = JSON.parse(toolCall.function.arguments) as CapturedLead;
       await persistLead(sessionId, lead, messages);
       captured = true;
 
-      apiMessages.push({ role: "assistant", content: res.content });
-      apiMessages.push({
-        role: "user",
-        content: [
-          {
-            type: "tool_result",
-            tool_use_id: toolUse.id,
-            content: "Saved. The team has been notified.",
-          },
-        ],
-      });
+      const followUpMessages: OpenAI.ChatCompletionMessageParam[] = [
+        ...apiMessages,
+        { role: "assistant", content: null, tool_calls: [toolCall] },
+        { role: "tool", tool_call_id: toolCall.id, content: "Saved. The team has been notified." },
+      ];
 
-      res = await client.messages.create({
+      res = await client.chat.completions.create({
         model: CONCIERGE_MODEL,
         max_tokens: 400,
-        system: [{ type: "text", text: system, cache_control: { type: "ephemeral" } }],
-        tools: [captureLeadTool as Anthropic.Tool],
-        messages: apiMessages,
+        messages: [{ role: "system", content: system }, ...followUpMessages],
+        tools: [captureLeadTool],
       });
-    }
 
-    const reply = res.content
-      .filter((c): c is Anthropic.TextBlock => c.type === "text")
-      .map((c) => c.text)
-      .join("\n")
-      .trim();
+      reply = res.choices[0].message.content?.trim() ?? "Got it!";
+    } else {
+      reply = res.choices[0].message.content?.trim() ?? "Got it!";
+    }
 
     return NextResponse.json({ reply: reply || "Got it!", captured });
   } catch (err) {
@@ -158,7 +146,6 @@ async function persistLead(sessionId: string, lead: CapturedLead, transcript: { 
       }),
     });
   } catch (err) {
-    // Don't let persistence failure break the chat reply.
     console.error("[persistLead]", err);
   }
 }

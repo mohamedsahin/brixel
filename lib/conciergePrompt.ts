@@ -47,26 +47,29 @@ CAPTURING THE LEAD: When you have gathered the visitor's name and a contact numb
 }
 
 export const captureLeadTool = {
-  name: "capture_lead",
-  description:
-    "Save a website visitor as a lead once name + contact are gathered, or when they want to be contacted.",
-  input_schema: {
-    type: "object" as const,
-    properties: {
-      name: { type: "string" },
-      phone: { type: "string", description: "phone or WhatsApp number" },
-      email: { type: "string" },
-      recommended_package: {
-        type: "string",
-        enum: ["starter", "store", "pro", "custom", "care"],
+  type: "function" as const,
+  function: {
+    name: "capture_lead",
+    description:
+      "Save a website visitor as a lead once name + contact are gathered, or when they want to be contacted.",
+    parameters: {
+      type: "object" as const,
+      properties: {
+        name: { type: "string" },
+        phone: { type: "string", description: "phone or WhatsApp number" },
+        email: { type: "string" },
+        recommended_package: {
+          type: "string",
+          enum: ["starter", "store", "pro", "custom", "care"],
+        },
+        summary: {
+          type: "string",
+          description: "one-line plain-English summary of what they want",
+        },
+        temperature: { type: "string", enum: ["hot", "warm", "cold"] },
       },
-      summary: {
-        type: "string",
-        description: "one-line plain-English summary of what they want",
-      },
-      temperature: { type: "string", enum: ["hot", "warm", "cold"] },
+      required: ["name", "phone", "temperature"],
     },
-    required: ["name", "phone", "temperature"],
   },
 };
 
