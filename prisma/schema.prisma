@@ -1,0 +1,126 @@
+// Brixel — Prisma schema
+// Postgres via Prisma. See README for setup.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum LeadSource {
+  form
+  whatsapp
+  concierge
+  callback
+}
+
+enum PreferredContact {
+  WhatsApp
+  Call
+  Email
+}
+
+enum Temperature {
+  hot
+  warm
+  cold
+}
+
+enum LeadStatus {
+  New
+  Contacted
+  Quoted
+  Won
+  Lost
+}
+
+enum PackageType {
+  one_time
+  recurring
+}
+
+model Package {
+  id         String      @id @default(cuid())
+  key        String      @unique
+  name       String
+  fromPrice  Int
+  priceRange String
+  type       PackageType @default(one_time)
+  recurring  String      @default("")
+  blurb      String
+  features   Json
+  tech       Json
+  bestFor    String
+  order      Int
+  featured   Boolean     @default(false)
+  updatedAt  DateTime    @updatedAt
+}
+
+model Lead {
+  id               String           @id @default(cuid())
+  name             String
+  business         String?
+  phone            String
+  email            String?
+  packageKey       String?
+  message          String?
+  source           LeadSource       @default(form)
+  preferredContact PreferredContact @default(WhatsApp)
+  temperature      Temperature?
+  aiSummary        String?
+  status           LeadStatus       @default(New)
+  conversation     Conversation?
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  @@index([status])
+  @@index([temperature])
+  @@index([createdAt])
+}
+
+model Conversation {
+  id                 String      @id @default(cuid())
+  sessionId          String      @unique
+  lead               Lead?       @relation(fields: [leadId], references: [id])
+  leadId             String?     @unique
+  messages           Json
+  recommendedPackage String?
+  classification     Temperature?
+  createdAt          DateTime    @default(now())
+}
+
+model Callback {
+  id        String   @id @default(cuid())
+  name      String
+  phone     String
+  bestTime  String?
+  status    String   @default("pending") // pending | done
+  createdAt DateTime @default(now())
+}
+
+model Event {
+  id        String   @id @default(cuid())
+  sessionId String?
+  type      String // visit | engage_ai | enquiry | won ...
+  metadata  Json?
+  createdAt DateTime @default(now())
+
+  @@index([type])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  type      String // enquiry | hot_lead | callback
+  payload   Json
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model AdminUser {
+  id    String @id @default(cuid())
+  email String @unique
+  role  String @default("owner")
+}
