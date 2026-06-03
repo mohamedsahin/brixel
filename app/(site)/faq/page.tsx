@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ChevronRight } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 import { PageHead } from "@/components/PageHead";
 
 export const metadata: Metadata = { title: "FAQ" };
@@ -19,20 +19,27 @@ export default function FaqPage() {
   return (
     <div>
       <PageHead eyebrow="Questions?" title="Frequently asked questions" sub="Plain answers to the things people ask us most." />
-      <section className="py-20 pt-10">
+      <section className="py-12 pt-8 sm:py-20 sm:pt-10">
         <div className="wrap max-w-[760px]">
           {faqs.map((q, i) => (
-            <details key={i} className="group card mb-3 overflow-hidden" open={i === 0}>
-              <summary className="flex cursor-pointer list-none items-center gap-3.5 px-6 py-5 [&::-webkit-details-marker]:hidden">
-                <span className="flex-1 font-head text-lg font-bold text-teal">{q[0]}</span>
-                <ChevronRight className="flex-none text-aqua transition group-open:rotate-90" size={20} />
+            <details key={i} className="group mb-3 overflow-hidden rounded-2xl border border-line bg-white shadow-soft" open={i === 0}>
+              <summary className="flex cursor-pointer list-none items-center gap-3 px-5 py-4 [&::-webkit-details-marker]:hidden sm:px-6 sm:py-5">
+                <span className="flex-1 font-head text-base font-bold text-teal sm:text-lg">{q[0]}</span>
+                <ChevronDown
+                  className="flex-none text-aqua transition-transform duration-200 group-open:rotate-180"
+                  size={20}
+                />
               </summary>
-              <div className="px-6 pb-5 text-base text-ink-soft">{q[1]}</div>
+              <div className="px-5 pb-5 text-[14.5px] leading-relaxed text-ink-soft sm:px-6 sm:pb-5 sm:text-base">
+                {q[1]}
+              </div>
             </details>
           ))}
-          <div className="mt-7 text-center">
-            <p className="text-ink-soft">Still wondering something?</p>
-            <Link href="/contact" className="btn btn-amber btn-lg mt-3">
+
+          <div className="mt-8 rounded-2xl bg-teal p-6 text-center sm:mt-7 sm:p-8">
+            <p className="font-head text-base font-semibold text-white sm:text-lg">Still have a question?</p>
+            <p className="mt-1.5 text-[13.5px] text-[#bfe3dd] sm:text-sm">We reply fast — usually same day.</p>
+            <Link href="/contact" className="btn btn-amber btn-lg mt-4 w-full justify-center sm:w-auto">
               Ask us — get a free quote
             </Link>
           </div>

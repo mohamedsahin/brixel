@@ -14,44 +14,70 @@ export default async function HomePage() {
 
   return (
     <div>
-      {/* hero */}
+      {/* ── Hero ── */}
       <section className="relative overflow-hidden">
-        <div className="pointer-events-none absolute -end-20 -top-32 h-[380px] w-[380px] animate-floaty rounded-full bg-aqua/50 blur-md" />
-        <div className="pointer-events-none absolute -bottom-24 start-[42%] h-[260px] w-[260px] animate-bob rounded-full bg-amber/30 blur-md" />
+        {/* Background blobs */}
+        <div className="pointer-events-none absolute -end-16 -top-24 h-[280px] w-[280px] animate-floaty rounded-full bg-aqua/40 blur-md sm:h-[380px] sm:w-[380px]" />
+        <div className="pointer-events-none absolute -bottom-20 start-[38%] h-[200px] w-[200px] animate-bob rounded-full bg-amber/25 blur-md sm:h-[260px] sm:w-[260px]" />
+
         <div className="wrap relative z-10">
-          <div className="grid items-center gap-12 py-16 md:py-[70px] lg:grid-cols-[1.05fr_.95fr]">
+          <div className="grid items-center gap-8 py-10 sm:py-14 lg:grid-cols-[1.05fr_.95fr] lg:gap-12 lg:py-[70px]">
+            {/* Text */}
             <div>
               <span className="eyebrow">UAE web design, made simple</span>
-              <h1 className="mt-3.5 text-[clamp(38px,5.4vw,62px)] font-extrabold leading-[1.02]">
-                Your business online — built simply.
+              <h1 className="mt-3 text-[clamp(34px,7vw,62px)] font-extrabold leading-[1.02]">
+                Your business online —{" "}
+                <span className="relative inline-block">
+                  built simply.
+                  <svg
+                    className="draw-underline absolute -bottom-1 start-0 h-[14px] w-full text-amber"
+                    viewBox="0 0 200 14"
+                    preserveAspectRatio="none"
+                    aria-hidden
+                  >
+                    <path d="M3 9c40-6 85-7 130-4 32 2 52 3 65 1" />
+                  </svg>
+                </span>
               </h1>
-              <svg className="draw-underline mt-1.5 block h-[18px] w-[min(360px,70%)] text-amber" viewBox="0 0 360 18" preserveAspectRatio="none" aria-hidden>
-                <path d="M4 12c70-9 150-9 220-6 50 2 90 4 132 1" />
-              </svg>
-              <p className="mt-5 max-w-[30ch] text-xl text-ink-soft">
-                Beautiful websites and online shops for small businesses. No tech words. No stress. Just a friendly team that explains everything plainly.
+              <p className="mt-5 text-[17px] leading-relaxed text-ink-soft sm:text-xl sm:max-w-[30ch]">
+                Beautiful websites and online shops for small businesses. No tech words. No stress.
               </p>
-              <div className="mt-8 flex flex-wrap gap-3.5">
-                <Link href="/contact" className="btn btn-amber btn-lg">
+
+              {/* CTAs — stacked on mobile, row on sm+ */}
+              <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+                <Link href="/contact" className="btn btn-amber btn-lg w-full justify-center sm:w-auto">
                   Get a free quote <ArrowRight size={18} />
                 </Link>
-                <OpenChatButton className="btn-teal btn-lg">Chat with us</OpenChatButton>
+                <OpenChatButton className="btn-teal btn-lg w-full justify-center sm:w-auto">
+                  Chat with Bricky
+                </OpenChatButton>
               </div>
-              <div className="mt-7 flex flex-wrap gap-5 text-[14.5px] text-ink-soft">
-                <span className="flex items-center gap-1.5"><Check size={17} /> Plain English, zero jargon</span>
-                <span className="flex items-center gap-1.5"><Check size={17} /> Arabic + English</span>
+
+              {/* Trust badges */}
+              <div className="mt-6 flex flex-wrap gap-4 text-[13.5px] text-ink-soft sm:text-[14.5px]">
+                <span className="flex items-center gap-1.5"><Check size={15} className="text-teal" /> Plain English, zero jargon</span>
+                <span className="flex items-center gap-1.5"><Check size={15} className="text-teal" /> Arabic + English</span>
+                <span className="flex items-center gap-1.5"><Check size={15} className="text-teal" /> UAE team, same-day reply</span>
               </div>
             </div>
+
+            {/* Hero image */}
             <Reveal>
-              <div className="relative">
-                <SmartImage src={IMAGES.hero} label="happy small-business owner" className="h-[420px] rounded-3xl" priority />
-                <div className="card absolute -start-4 bottom-6 flex animate-bob items-center gap-3 px-4 py-3.5 shadow-lift">
-                  <span className="grid h-10 w-10 place-items-center rounded-full bg-wa text-white">
-                    <WhatsAppIcon size={20} />
+              <div className="relative mx-auto w-full max-w-md lg:max-w-none">
+                <SmartImage
+                  src={IMAGES.hero}
+                  label="happy small-business owner"
+                  className="h-[240px] w-full rounded-2xl sm:h-[320px] lg:h-[420px] lg:rounded-3xl"
+                  priority
+                />
+                {/* Floating WhatsApp notification card */}
+                <div className="card absolute start-2 bottom-4 flex animate-bob items-center gap-3 px-3.5 py-3 shadow-lift sm:start-2 lg:-start-4 lg:bottom-6">
+                  <span className="grid h-9 w-9 place-items-center rounded-full bg-wa text-white lg:h-10 lg:w-10">
+                    <WhatsAppIcon size={18} />
                   </span>
                   <div>
-                    <div className="font-head text-sm font-bold text-teal">New WhatsApp lead!</div>
-                    <div className="text-xs text-ink-soft">&quot;Hi, I&apos;d like a quote 👋&quot;</div>
+                    <div className="font-head text-[13px] font-bold text-teal lg:text-sm">New WhatsApp lead!</div>
+                    <div className="text-[11px] text-ink-soft lg:text-xs">&quot;Hi, I&apos;d like a quote 👋&quot;</div>
                   </div>
                 </div>
               </div>
@@ -60,9 +86,9 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* trust strip */}
-      <section className="bg-mist py-14">
-        <div className="wrap grid grid-cols-2 gap-5 py-3 lg:grid-cols-4">
+      {/* ── Trust strip ── */}
+      <section className="bg-mist py-10 sm:py-14">
+        <div className="wrap grid grid-cols-2 gap-5 py-2 lg:grid-cols-4">
           {[
             ["8+", "years building for UAE businesses"],
             ["120+", "websites & shops launched"],
@@ -70,37 +96,37 @@ export default async function HomePage() {
             ["AR + EN", "two languages, done right"],
           ].map((x, i) => (
             <Reveal key={i} delay={i * 70} className="text-center">
-              <div className="font-head text-[34px] font-extrabold text-teal">{x[0]}</div>
-              <div className="mt-0.5 text-sm text-ink-soft">{x[1]}</div>
+              <div className="font-head text-[28px] font-extrabold text-teal sm:text-[34px]">{x[0]}</div>
+              <div className="mt-0.5 text-xs text-ink-soft sm:text-sm">{x[1]}</div>
             </Reveal>
           ))}
         </div>
       </section>
 
-      {/* packages */}
-      <section className="py-20">
+      {/* ── Packages ── */}
+      <section className="py-14 sm:py-20">
         <div className="wrap">
-          <div className="mx-auto mb-11 max-w-[56ch] text-center">
+          <div className="mx-auto mb-8 max-w-[56ch] text-center sm:mb-11">
             <span className="eyebrow">Simple packages</span>
-            <h2 className="mt-2.5 text-[clamp(30px,4vw,44px)]">Pick what fits — we explain the rest</h2>
-            <p className="mt-3.5 text-[17px] text-ink-soft">
-              No confusing tech words. Just plain choices, with a friendly &quot;from&quot; price so you always know where you stand.
+            <h2 className="mt-2.5 text-[clamp(26px,4vw,44px)]">Pick what fits — we explain the rest</h2>
+            <p className="mt-3 text-[15px] text-ink-soft sm:text-[17px]">
+              No confusing tech words. Just plain choices, with a friendly &quot;from&quot; price.
             </p>
           </div>
-          <div className="grid items-stretch gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid items-stretch gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3">
             {packages.map((p, i) => (
               <Reveal key={p.key} delay={i * 60} className="flex">
                 <PackageCard pkg={p} />
               </Reveal>
             ))}
             <Reveal delay={packages.length * 60} className="flex">
-              <div className="flex h-full w-full flex-col items-start justify-center rounded-2xl border-[1.5px] border-dashed border-aqua bg-mist p-7">
-                <span className="grid h-[58px] w-[58px] place-items-center rounded-[17px] bg-white text-teal">
-                  <HelpCircle size={28} />
+              <div className="flex h-full w-full flex-col items-start justify-center rounded-2xl border-[1.5px] border-dashed border-aqua bg-mist p-6 sm:p-7">
+                <span className="grid h-[52px] w-[52px] place-items-center rounded-[17px] bg-white text-teal sm:h-[58px] sm:w-[58px]">
+                  <HelpCircle size={26} />
                 </span>
-                <h3 className="mt-4 text-[23px]">Not sure which one?</h3>
-                <p className="mt-3.5 flex-1 text-[15.5px] text-ink-soft">
-                  Chat with Bricky, our friendly helper. Answer a couple of easy questions and we&apos;ll point you to the right fit — no pressure.
+                <h3 className="mt-4 text-xl sm:text-[23px]">Not sure which one?</h3>
+                <p className="mt-3 flex-1 text-[14.5px] text-ink-soft sm:text-[15.5px]">
+                  Chat with Bricky. Answer a couple of easy questions and we&apos;ll point you to the right fit — no pressure.
                 </p>
                 <OpenChatButton className="btn-teal mt-5 w-full justify-center">Chat with us</OpenChatButton>
               </div>
@@ -109,14 +135,39 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* how it works */}
-      <section className="bg-mist py-20">
+      {/* ── How it works ── */}
+      <section className="bg-mist py-14 sm:py-20">
         <div className="wrap">
-          <div className="mb-10 text-center">
+          <div className="mb-8 text-center sm:mb-10">
             <span className="eyebrow">Easy as 1-2-3</span>
-            <h2 className="mt-2.5 text-[clamp(28px,3.6vw,40px)]">How it works</h2>
+            <h2 className="mt-2.5 text-[clamp(24px,3.6vw,40px)]">How it works</h2>
           </div>
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+
+          {/* Mobile: vertical timeline */}
+          <div className="flex flex-col gap-0 sm:hidden">
+            {[
+              ["Tell us about your business", "A quick chat or message. No tech words needed — just tell us what you do."],
+              ["We show you a plan & price", "A clear plan in plain English, with a fixed price. No surprises."],
+              ["We build it", "You see a preview early and tell us what to tweak until it's just right."],
+              ["We look after it", "With a Care Plan, we keep it healthy, fast and safe — so you don't have to."],
+            ].map((s, i, arr) => (
+              <div key={i} className="flex gap-4">
+                <div className="flex flex-col items-center">
+                  <div className="grid h-10 w-10 flex-none place-items-center rounded-full bg-teal font-head text-sm font-extrabold text-white shadow-card">
+                    {i + 1}
+                  </div>
+                  {i < arr.length - 1 && <div className="mt-1 w-0.5 flex-1 bg-mist-deep" style={{ minHeight: "2rem" }} />}
+                </div>
+                <div className={`pb-6 ${i === arr.length - 1 ? "" : ""}`}>
+                  <h4 className="font-head text-base font-bold text-teal">{s[0]}</h4>
+                  <p className="mt-1 text-[14px] text-ink-soft">{s[1]}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Desktop: card grid */}
+          <div className="hidden grid-cols-2 gap-5 sm:grid lg:grid-cols-4">
             {[
               ["Tell us about your business", "A quick chat or message. No tech words needed — just tell us what you do."],
               ["We show you a plan & price", "A clear plan in plain English, with a fixed price. No surprises."],
@@ -132,60 +183,74 @@ export default async function HomePage() {
               </Reveal>
             ))}
           </div>
-          <div className="mt-9 text-center text-ink-soft">
+
+          <div className="mt-7 text-center text-sm text-ink-soft sm:text-base">
             Simple payment: <b className="text-teal">50% to start, 50% when it&apos;s done.</b> That&apos;s it.
           </div>
         </div>
       </section>
 
-      {/* testimonials */}
-      <section className="py-20">
+      {/* ── Testimonials ── */}
+      <section className="py-14 sm:py-20">
         <div className="wrap">
-          <div className="mb-10 text-center">
+          <div className="mb-8 text-center sm:mb-10">
             <span className="eyebrow">Loved by local businesses</span>
-            <h2 className="mt-2.5 text-[clamp(28px,3.6vw,40px)]">Kind words from UAE owners</h2>
+            <h2 className="mt-2.5 text-[clamp(24px,3.6vw,40px)]">Kind words from UAE owners</h2>
           </div>
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {[
-              ["They explained everything like I was a friend, not a computer person. My salon finally looks professional online.", "Layla H.", "Beauty Lounge, Dubai"],
-              ["My shop now takes orders while I sleep. Tabby was set up for me — customers love paying later.", "Omar F.", "Auto Parts, Sharjah"],
-              ["Arabic and English, bookings, the lot. It looks expensive but the price was fair and clear.", "Dr. Reem A.", "Dental Clinic, Abu Dhabi"],
-            ].map((q, i) => (
-              <Reveal key={i} delay={i * 70} className="rounded-xl border border-line bg-white p-6">
-                <span className="flex gap-0.5 text-amber">
-                  {Array.from({ length: 5 }).map((_, j) => (
-                    <Star key={j} size={16} fill="currentColor" stroke="none" />
-                  ))}
-                </span>
-                <p className="mt-3 text-base">&quot;{q[0]}&quot;</p>
-                <div className="mt-4 flex items-center gap-3">
-                  <span className="grid h-[42px] w-[42px] place-items-center rounded-full bg-mist font-head font-bold text-teal">
-                    {q[1].split(" ").map((w) => w[0]).join("")}
+
+          {/* Mobile: snap-scroll carousel */}
+          <div className="-mx-4 sm:mx-0">
+            <div className="snap-carousel px-4 sm:px-0 sm:grid sm:grid-cols-2 sm:overflow-visible sm:pb-0 lg:grid-cols-3">
+              {[
+                ["They explained everything like I was a friend, not a computer person. My salon finally looks professional online.", "Layla H.", "Beauty Lounge, Dubai"],
+                ["My shop now takes orders while I sleep. Tabby was set up for me — customers love paying later.", "Omar F.", "Auto Parts, Sharjah"],
+                ["Arabic and English, bookings, the lot. It looks expensive but the price was fair and clear.", "Dr. Reem A.", "Dental Clinic, Abu Dhabi"],
+              ].map((q, i) => (
+                <Reveal
+                  key={i}
+                  delay={i * 70}
+                  className="min-w-[80vw] rounded-xl border border-line bg-white p-5 sm:min-w-0 sm:p-6"
+                >
+                  <span className="flex gap-0.5 text-amber">
+                    {Array.from({ length: 5 }).map((_, j) => (
+                      <Star key={j} size={15} fill="currentColor" stroke="none" />
+                    ))}
                   </span>
-                  <div>
-                    <div className="font-head text-[14.5px] font-bold text-teal">{q[1]}</div>
-                    <div className="text-[13px] text-ink-soft">{q[2]}</div>
+                  <p className="mt-3 text-[14.5px] leading-relaxed sm:text-base">&quot;{q[0]}&quot;</p>
+                  <div className="mt-4 flex items-center gap-3">
+                    <span className="grid h-[40px] w-[40px] place-items-center rounded-full bg-mist font-head text-sm font-bold text-teal">
+                      {q[1].split(" ").map((w) => w[0]).join("")}
+                    </span>
+                    <div>
+                      <div className="font-head text-[14px] font-bold text-teal">{q[1]}</div>
+                      <div className="text-[12px] text-ink-soft">{q[2]}</div>
+                    </div>
                   </div>
-                </div>
-              </Reveal>
-            ))}
+                </Reveal>
+              ))}
+            </div>
           </div>
         </div>
       </section>
 
-      {/* closing CTA */}
-      <section className="pb-24">
-        <div className="wrap">
-          <Reveal className="rounded-3xl bg-teal px-8 py-14 text-center text-white">
-            <h2 className="text-[clamp(28px,3.6vw,40px)] text-white">Ready to get your business online?</h2>
-            <p className="mx-auto mt-3.5 max-w-[46ch] text-lg text-[#bfe3dd]">
+      {/* ── Closing CTA ── */}
+      <section className="px-4 pb-14 sm:px-6 sm:pb-24">
+        <div className="mx-auto max-w-[1180px]">
+          <Reveal className="rounded-3xl bg-teal px-6 py-12 text-center text-white sm:px-8 sm:py-14">
+            <h2 className="text-[clamp(24px,3.6vw,40px)] text-white">Ready to get your business online?</h2>
+            <p className="mx-auto mt-3 max-w-[40ch] text-[15px] text-[#bfe3dd] sm:mt-3.5 sm:text-lg">
               Tell us a little about what you do, and we&apos;ll send you a friendly, no-pressure quote.
             </p>
-            <div className="mt-7 flex flex-wrap justify-center gap-3.5">
-              <Link href="/contact" className="btn btn-amber btn-lg">
+            <div className="mt-6 flex flex-col items-center gap-3 sm:mt-7 sm:flex-row sm:justify-center">
+              <Link href="/contact" className="btn btn-amber btn-lg w-full justify-center sm:w-auto">
                 Get a free quote <ArrowRight size={18} />
               </Link>
-              <a className="btn btn-wa btn-lg" href={waLink()} target="_blank" rel="noreferrer">
+              <a
+                className="btn btn-wa btn-lg w-full justify-center sm:w-auto"
+                href={waLink()}
+                target="_blank"
+                rel="noreferrer"
+              >
                 <WhatsAppIcon size={20} /> WhatsApp
               </a>
             </div>

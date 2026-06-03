@@ -3,8 +3,14 @@
 @tailwind utilities;
 
 @layer base {
+  html {
+    scroll-behavior: smooth;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-text-size-adjust: 100%;
+  }
   body {
     @apply bg-cloud text-ink font-body antialiased;
+    overscroll-behavior-y: none;
   }
   h1, h2, h3, h4 {
     @apply font-head text-teal tracking-tight;
@@ -13,7 +19,6 @@
   ::selection {
     @apply bg-aqua text-white;
   }
-  /* RTL: Tajawal for Arabic */
   html[dir="rtl"] body {
     @apply font-ar;
   }
@@ -21,17 +26,19 @@
 
 @layer components {
   .wrap {
-    @apply mx-auto w-full max-w-[1180px] px-6;
+    @apply mx-auto w-full max-w-[1180px] px-4 sm:px-6;
   }
   .eyebrow {
-    @apply font-head text-sm font-semibold uppercase tracking-[0.08em] text-aqua;
+    @apply font-head text-[11px] sm:text-sm font-semibold uppercase tracking-[0.1em] text-aqua;
   }
   .btn {
     @apply inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full border border-transparent
-           px-6 py-3.5 font-head text-base font-semibold leading-none transition active:translate-y-px;
+           px-5 py-3 font-head text-[15px] font-semibold leading-none transition
+           active:scale-[0.97] active:translate-y-px;
+    min-height: 44px;
   }
-  .btn-sm { @apply px-4 py-2.5 text-sm; }
-  .btn-lg { @apply px-7 py-4 text-lg; }
+  .btn-sm { @apply px-4 py-2.5 text-[13px]; min-height: 38px; }
+  .btn-lg { @apply px-6 py-3.5 text-base sm:px-7 sm:py-4 sm:text-lg; }
   .btn-amber {
     @apply bg-amber text-amber-text shadow-[0_8px_20px_-8px_rgba(245,165,36,.7)] hover:bg-amber-600;
   }
@@ -40,13 +47,15 @@
   .btn-wa { @apply bg-wa text-[#0b3d1f] hover:brightness-95; }
   .card { @apply rounded-2xl border border-line bg-white shadow-soft; }
   .input, .select, .textarea {
-    @apply w-full rounded-xl border-[1.5px] border-line bg-white px-3.5 py-3 font-body text-[15.5px] text-ink
+    @apply w-full rounded-xl border-[1.5px] border-line bg-white px-4 py-3 font-body text-[15.5px] text-ink
            outline-none transition focus:border-aqua focus:ring-[3px] focus:ring-aqua-soft;
+    min-height: 48px;
   }
   .textarea { @apply min-h-[110px] resize-y; }
   .label { @apply mb-1.5 block font-head text-sm font-semibold text-ink; }
   .badge { @apply inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 font-head text-xs font-semibold; }
-  /* striped placeholder for imagery slots */
+
+  /* Striped placeholder for imagery slots */
   .ph {
     background: repeating-linear-gradient(135deg, #E4EFEC 0 14px, #D4E6E1 14px 28px);
     @apply grid place-items-center text-teal;
@@ -56,7 +65,7 @@
   }
 }
 
-/* drawn underline under the hero headline */
+/* ── Drawn underline ── */
 .draw-underline path {
   fill: none;
   stroke: currentColor;
@@ -68,6 +77,7 @@
 }
 @keyframes draw { to { stroke-dashoffset: 0; } }
 
+/* ── Logo bricks ── */
 .logo-brick { animation: brickpop 0.55s cubic-bezier(0.2, 0.8, 0.3, 1) backwards; }
 .logo-brick:nth-child(1) { animation-delay: 0.05s; }
 .logo-brick:nth-child(2) { animation-delay: 0.16s; }
@@ -79,6 +89,7 @@
   100% { transform: scale(1); opacity: 1; }
 }
 
+/* ── Pulse ring ── */
 @keyframes pulse-ring {
   0% { box-shadow: 0 0 0 0 rgba(58, 168, 156, 0.45); }
   70% { box-shadow: 0 0 0 14px rgba(58, 168, 156, 0); }
@@ -86,7 +97,52 @@
 }
 .pulse-ring { animation: pulse-ring 2.8s ease-out infinite; }
 
+/* ── Mobile animations ── */
+@keyframes slide-up {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
+}
+.slide-up { animation: slide-up 0.34s cubic-bezier(0.32, 0.72, 0, 1) forwards; }
+
+@keyframes slide-in-right {
+  from { transform: translateX(100%); opacity: 0; }
+  to   { transform: translateX(0); opacity: 1; }
+}
+.slide-in-right { animation: slide-in-right 0.26s cubic-bezier(0.32, 0.72, 0, 1) forwards; }
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+.fade-in { animation: fade-in 0.2s ease forwards; }
+
+/* ── Concierge chat scrollbar ── */
+.chat-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: #D4E6E1 transparent;
+}
+.chat-scroll::-webkit-scrollbar { width: 4px; }
+.chat-scroll::-webkit-scrollbar-thumb {
+  background: #D4E6E1;
+  border-radius: 2px;
+}
+
+/* ── Snap-scroll carousel (testimonials on mobile) ── */
+.snap-carousel {
+  display: flex;
+  gap: 1rem;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  padding-bottom: 0.75rem;
+}
+.snap-carousel::-webkit-scrollbar { display: none; }
+.snap-carousel > * { scroll-snap-align: start; }
+
+/* ── Accessibility: motion-reduce ── */
 @media (prefers-reduced-motion: reduce) {
   .draw-underline path { stroke-dashoffset: 0; animation: none; }
-  .logo-brick, .pulse-ring, .animate-floaty, .animate-bob { animation: none !important; }
+  .logo-brick, .pulse-ring, .animate-floaty, .animate-bob,
+  .slide-up, .slide-in-right, .fade-in { animation: none !important; }
 }

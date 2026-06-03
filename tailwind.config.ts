@@ -55,7 +55,15 @@ const config: Config = {
       },
     },
   },
-  plugins: [],
+  plugins: [
+    // Safe-area padding utilities for notch / home-indicator devices
+    function ({ addUtilities }: { addUtilities: (u: Record<string, Record<string, string>>) => void }) {
+      addUtilities({
+        ".pb-safe": { paddingBottom: "env(safe-area-inset-bottom, 1.75rem)" },
+        ".pt-safe": { paddingTop: "env(safe-area-inset-top, 0px)" },
+      });
+    },
+  ],
 };
 
 export default config;

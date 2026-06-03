@@ -3,17 +3,20 @@ import { Footer } from "@/components/Footer";
 import { FloatingButtons } from "@/components/FloatingButtons";
 import { Concierge } from "@/components/Concierge";
 import { CookieBanner } from "@/components/CookieBanner";
+import { MobileNav } from "@/components/MobileNav";
 
-// Public site chrome. The /admin route lives outside this group, so it gets
-// none of the marketing header/footer/concierge.
 export default function SiteLayout({ children }: { children: React.ReactNode }) {
   return (
     <>
       <Header />
-      <main>{children}</main>
+      {/* Extra bottom padding on mobile so content clears the fixed bottom nav */}
+      <main className="pb-[calc(4rem+env(safe-area-inset-bottom,0px))] lg:pb-0">
+        {children}
+      </main>
       <Footer />
       <FloatingButtons />
       <Concierge />
+      <MobileNav />
       <CookieBanner />
     </>
   );

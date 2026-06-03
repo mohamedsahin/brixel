@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { Bot, MessageCircle, Send, X, CheckCircle2, Phone, Scissors, ShoppingBag, Calendar, Eye } from "lucide-react";
 import { WhatsAppIcon } from "./WhatsAppIcon";
 import { waLink, telLink, CONTACT } from "@/lib/contact";
+import { cn } from "@/lib/utils";
 
 type Msg = { role: "user" | "assistant"; content: string };
 
@@ -15,7 +16,6 @@ const QUICKIES = [
   { t: "Just looking around", Icon: Eye },
 ];
 
-// renders **bold** / *italic*
 function fmt(text: string) {
   const safe = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   return { __html: safe.replace(/\*\*(.+?)\*\*/g, "<b>$1</b>").replace(/\*(.+?)\*/g, "<i>$1</i>") };
@@ -29,6 +29,7 @@ export function Concierge() {
   const [typing, setTyping] = useState(false);
   const [captured, setCaptured] = useState(false);
   const bodyRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   const sessionId = useRef("s" + Math.random().toString(36).slice(2));
   const engaged = useRef(false);
 
@@ -42,10 +43,10 @@ export function Concierge() {
     if (open) {
       setBubble(false);
       sessionStorage.setItem("brixel_bubble", "1");
+      setTimeout(() => inputRef.current?.focus(), 350);
     }
   }, [open]);
 
-  // Let any page CTA open the concierge via a window event.
   useEffect(() => {
     const handler = () => setOpen(true);
     window.addEventListener("brixel:open-concierge", handler);
@@ -94,18 +95,20 @@ export function Concierge() {
 
   return (
     <>
+      {/* Desktop-only floating toggle button */}
       {!open && (
         <button
           onClick={() => setOpen(true)}
           aria-label="Chat with Bricky"
-          className="pulse-ring fixed bottom-5 end-5 z-[62] grid h-[62px] w-[62px] place-items-center rounded-full bg-teal text-white shadow-lift transition hover:scale-105"
+          className="pulse-ring fixed bottom-5 end-5 z-[62] hidden h-[62px] w-[62px] place-items-center rounded-full bg-teal text-white shadow-lift transition hover:scale-105 lg:grid"
         >
           <MessageCircle size={26} />
         </button>
       )}
 
+      {/* Desktop-only chat bubble teaser */}
       {!open && bubble && (
-        <div className="fixed bottom-8 end-[88px] z-[61] max-w-[240px] rounded-2xl rounded-br-sm border border-line bg-white px-4 py-3 text-sm shadow-lift">
+        <div className="fixed bottom-8 end-[88px] z-[61] hidden max-w-[240px] rounded-2xl rounded-br-sm border border-line bg-white px-4 py-3 text-sm shadow-lift lg:block">
           <b className="font-head text-teal">Hi, I&apos;m Bricky!</b> Want help picking the right website? Ask me anything.
           <button onClick={() => setOpen(true)} className="mt-2 block font-head font-bold text-aqua">
             Let&apos;s chat →
@@ -113,27 +116,55 @@ export function Concierge() {
         </div>
       )}
 
+      {/* Chat panel — bottom sheet on mobile, floating card on desktop */}
       {open && (
-        <div className="fixed bottom-5 end-5 z-[63] flex h-[580px] max-h-[calc(100vh-40px)] w-[380px] max-w-[calc(100vw-32px)] flex-col overflow-hidden rounded-[20px] border border-line bg-white shadow-lift">
-          <div className="flex items-center gap-3 bg-teal px-[18px] py-4 text-white">
+        <div
+          className={cn(
+            "fixed z-[63] flex flex-col overflow-hidden bg-white",
+            // Mobile: full-width bottom sheet
+            "inset-x-0 bottom-0 rounded-t-[24px] slide-up",
+            "h-[88dvh] max-h-[88dvh]",
+            // Desktop: floating card
+            "lg:bottom-5 lg:inset-x-auto lg:end-5 lg:h-[580px] lg:max-h-[calc(100vh-40px)] lg:w-[380px] lg:rounded-[20px] lg:border lg:border-line lg:shadow-lift",
+          )}
+        >
+          {/* Mobile drag handle */}
+          <div className="flex justify-center pt-2.5 lg:hidden">
+            <div className="h-[5px] w-10 rounded-full bg-mist-deep" />
+          </div>
+
+          {/* Header */}
+          <div className="flex items-center gap-3 bg-teal px-4 py-3.5 text-white lg:px-[18px] lg:py-4">
             <span className="grid h-[38px] w-[38px] place-items-center rounded-full bg-aqua">
               <Bot size={20} />
             </span>
             <div className="flex-1">
               <h4 className="font-head text-base text-white">Bricky</h4>
               <div className="flex items-center gap-1.5 text-xs text-[#bfe3dd]">
-                <span className="inline-block h-1.5 w-1.5 rounded-full bg-[#7CFC9A]" /> Brixel helper · replies in seconds
+                <span className="inline-block h-1.5 w-1.5 rounded-full bg-[#7CFC9A]" />
+                Brixel helper · replies in seconds
               </div>
             </div>
-            <button onClick={() => setOpen(false)} aria-label="Close" className="ms-auto text-2xl leading-none text-[#bfe3dd]">
+            <button
+              onClick={() => setOpen(false)}
+              aria-label="Close chat"
+              className="ms-auto grid h-9 w-9 place-items-center rounded-full text-[#bfe3dd] transition hover:bg-white/10"
+            >
               <X size={22} />
             </button>
           </div>
 
-          <div ref={bodyRef} className="flex flex-1 flex-col gap-3 overflow-y-auto bg-cloud p-[18px]">
+          {/* Messages */}
+          <div
+            ref={bodyRef}
+            className="chat-scroll flex flex-1 flex-col gap-3 overflow-y-auto bg-cloud p-4 lg:p-[18px]"
+          >
             {msgs.map((m, i) =>
               m.role === "user" ? (
-                <div key={i} className="max-w-[84%] self-end rounded-2xl rounded-br-sm bg-teal px-3.5 py-2.5 text-[14.5px] text-white">
+                <div
+                  key={i}
+                  className="max-w-[84%] self-end rounded-2xl rounded-br-sm bg-teal px-3.5 py-2.5 text-[14.5px] text-white"
+                >
                   {m.content}
                 </div>
               ) : (
@@ -144,6 +175,7 @@ export function Concierge() {
                 />
               ),
             )}
+
             {typing && (
               <div className="max-w-[84%] self-start rounded-2xl border border-line bg-white px-3.5 py-3">
                 <span className="flex gap-1">
@@ -151,13 +183,19 @@ export function Concierge() {
                 </span>
               </div>
             )}
+
             {captured && (
               <div className="rounded-xl border border-aqua bg-mist p-3.5">
                 <div className="mb-2 flex items-center gap-1.5 font-head text-sm font-bold text-teal">
                   <CheckCircle2 size={17} /> You&apos;re all set!
                 </div>
                 <div className="flex gap-2">
-                  <a className="btn btn-wa btn-sm flex-1" href={waLink("Hi Brixel! Bricky just took my details 🙂")} target="_blank" rel="noreferrer">
+                  <a
+                    className="btn btn-wa btn-sm flex-1"
+                    href={waLink("Hi Brixel! Bricky just took my details 🙂")}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
                     <WhatsAppIcon size={15} /> WhatsApp
                   </a>
                   <a className="btn btn-ghost btn-sm flex-1" href={telLink()}>
@@ -168,8 +206,9 @@ export function Concierge() {
             )}
           </div>
 
+          {/* Quick reply buttons */}
           {msgs.length <= 1 && !typing && (
-            <div className="flex flex-wrap gap-2 bg-cloud px-[18px] pb-1.5">
+            <div className="flex flex-wrap gap-2 bg-cloud px-4 pb-1.5 lg:px-[18px]">
               {QUICKIES.map(({ t, Icon }) => (
                 <button
                   key={t}
@@ -182,21 +221,25 @@ export function Concierge() {
             </div>
           )}
 
+          {/* Input bar */}
           <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              send();
-            }}
+            onSubmit={(e) => { e.preventDefault(); send(); }}
             className="flex gap-2 border-t border-line bg-white p-3"
+            style={{ paddingBottom: "calc(0.75rem + env(safe-area-inset-bottom, 0px))" }}
           >
             <input
+              ref={inputRef}
               value={input}
               onChange={(e) => setInput(e.target.value)}
               placeholder="Type your message…"
               aria-label="Message"
-              className="flex-1 rounded-full border-[1.5px] border-line px-4 py-2.5 text-[14.5px] outline-none focus:border-aqua"
+              className="flex-1 rounded-full border-[1.5px] border-line bg-cloud px-4 py-2.5 text-[14.5px] outline-none focus:border-aqua focus:bg-white transition"
             />
-            <button type="submit" aria-label="Send" className="grid h-[42px] w-[42px] flex-none place-items-center rounded-full bg-amber text-amber-text">
+            <button
+              type="submit"
+              aria-label="Send"
+              className="grid h-[44px] w-[44px] flex-none place-items-center rounded-full bg-amber text-amber-text transition active:scale-95"
+            >
               <Send size={18} />
             </button>
           </form>
