@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { generateArticle } from "@/lib/articleGenerator";
+import { isAutoPublish } from "@/lib/settings";
 import { prisma } from "@/lib/prisma";
 
 export const runtime = "nodejs";
@@ -8,8 +9,6 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
 export async function POST(req: Request) {
-  // Accept: Bearer <CRON_SECRET> (manual/external trigger)
-  //      OR: Vercel's internal cron signature header
   const auth = req.headers.get("authorization");
   const isVercelCron = !!req.headers.get("x-vercel-cron-signature");
   const isManualAuth = !!process.env.CRON_SECRET && auth === `Bearer ${process.env.CRON_SECRET}`;
@@ -22,9 +21,9 @@ export async function POST(req: Request) {
 
   try {
     console.log("[cron/articles] Generating article…");
-    const article = await generateArticle();
+    const [article, autoPublish] = await Promise.all([generateArticle(), isAutoPublish()]);
+    const status = autoPublish ? "published" : "draft";
 
-    // Guarantee slug uniqueness
     let slug = article.slug;
     const collision = await prisma.article.findUnique({ where: { slug } });
     if (collision) slug = `${slug}-${Date.now().toString(36)}`;
@@ -38,34 +37,27 @@ export async function POST(req: Request) {
         focusKeyword:    article.focusKeyword,
         metaTitle:       article.metaTitle,
         metaDescription: article.metaDescription,
-        tags:            article.tags,
+        tags:            [...(article.tags ?? []), ...(article.lsiKeywords ?? [])].slice(0, 8),
         coverImageQuery: article.coverImageQuery ?? "small business",
         readingMins:     article.readingMins,
-        status:          "published",
+        status,
       },
     });
 
-    // Revalidate blog listing so new article appears without a redeploy
-    try {
-      revalidatePath("/blog");
-    } catch {}
+    if (status === "published") {
+      try { revalidatePath("/blog"); } catch {}
+    }
 
     const ms = Date.now() - startedAt;
-    console.log(`[cron/articles] Published "${created.title}" (${ms}ms)`);
+    console.log(`[cron/articles] ${status === "published" ? "Published" : "Saved draft"}: "${created.title}" (${ms}ms)`);
 
-    return NextResponse.json({
-      ok:    true,
-      slug:  created.slug,
-      title: created.title,
-      ms,
-    });
+    return NextResponse.json({ ok: true, slug: created.slug, title: created.title, status, ms });
   } catch (err) {
     console.error("[cron/articles]", err);
     return NextResponse.json({ error: String(err) }, { status: 500 });
   }
 }
 
-// Allow GET so Vercel's health-check ping doesn't 405
 export async function GET() {
   return NextResponse.json({ ok: true, note: "POST to generate an article" });
 }

@@ -8,18 +8,25 @@ export interface ArticleSection {
   callout?: string;
 }
 
+export interface ArticleFaq {
+  question: string;
+  answer: string;
+}
+
 export interface ArticleContent {
   intro: string;
   sections: ArticleSection[];
   conclusion: string;
   ctaHeading: string;
   ctaText: string;
+  faqs: ArticleFaq[]; // Renders as FAQ rich snippet in Google
 }
 
 export interface GeneratedArticle {
   title: string;
   slug: string;
   focusKeyword: string;
+  lsiKeywords?: string[];
   metaTitle: string;
   metaDescription: string;
   excerpt: string;
@@ -29,16 +36,33 @@ export interface GeneratedArticle {
   content: ArticleContent;
 }
 
-const SYSTEM_PROMPT = `You are an expert SEO content writer for Brixel, a web design company based in the UAE that builds websites for small businesses.
+const SYSTEM_PROMPT = `You are a senior content writer with 8+ years of experience helping UAE small businesses grow online. You write for Brixel's blog.
 
-Your goal: write articles that help UAE small business owners find Brixel on Google, understand why they need a professional website, and naturally reach out for a quote.
+GOOGLE E-E-A-T REQUIREMENTS (Experience, Expertise, Authoritativeness, Trustworthiness):
+- Write from REAL experience — mention specific challenges UAE business owners face
+- Include SPECIFIC, verifiable details: real UAE platforms (Noon, Careem, Talabat), real payment methods (Tabby, Tamara, Mashreq, Emirates NBD), real UAE locations
+- Use NUMBERS and DATA where possible: "67% of UAE consumers check a business website before visiting"
+- Show genuine expertise — go beyond surface-level advice, explain the WHY
+- Be OPINIONATED — Google rewards articles that take a clear stance, not wishy-washy both-sides content
 
 BRIXEL CONTEXT:
 - Packages: Starter Website (from AED 4,500), Online Store (from AED 9,000), Pro Website (from AED 14,000), Custom App (from AED 20,000), Care Plan (from AED 400/month)
-- USP: Friendly team, plain English, Arabic + English, WhatsApp support, same-day replies, 50% upfront payment
-- Based in UAE, serving all emirates
+- USP: Friendly team, plain English, Arabic + English, WhatsApp-first, same-day replies, fixed prices with 50% upfront
+- Serves: Dubai, Abu Dhabi, Sharjah, Ajman, RAK, Al Ain, Fujairah
+- Real differentiator: explains everything in plain language, no tech jargon, treats clients like people
 
-TONE: Friendly, conversational, like advice from a knowledgeable friend — never corporate or jargon-heavy. Plain language throughout.
+TONE: Like a trusted friend who happens to know web design — warm, direct, occasionally funny, always useful.
+
+WHAT GOOGLE REWARDS:
+✓ Specific, actionable advice the reader can use TODAY
+✓ Real examples and scenarios (even if composite/illustrative)
+✓ Honest acknowledgment of trade-offs and limitations
+✓ Original insights — not just what everyone else says
+✓ Clear structure with descriptive H2s
+✗ Vague generalisations ("having a website is important")
+✗ Hype words: "revolutionary", "game-changing", "leverage", "seamless", "cutting-edge"
+✗ Filler phrases: "In today's digital world...", "In conclusion..."
+✗ Bullet lists that are just keyword stuffing
 
 OUTPUT: Always return valid JSON exactly matching the schema. Nothing else.`;
 
@@ -90,56 +114,92 @@ export async function generateArticle(): Promise<GeneratedArticle> {
     ? `\n\nAVOID these recently covered topics (do not write anything similar):\n${recentTitles.map((t) => `- ${t}`).join("\n")}`
     : "";
 
-  const prompt = `Generate a complete, SEO-optimized blog article for Brixel's website.
+  const prompt = `Generate a high-quality, SEO-optimised blog article for Brixel's website.
 
-TOPIC SELECTION: Choose a specific, high-search-volume topic. Be creative — pick a unique combination of:
-- UAE city: ${CITIES.join(", ")}
+STEP 1 — TOPIC RESEARCH:
+Think like a UAE small business owner typing into Google. Pick one VERY specific topic combining:
+- City: ${CITIES.join(", ")}
 - Business type: ${BUSINESSES.join(", ")}
-- Angle: tips, guide, comparison, cost breakdown, success story format, common mistakes, checklist
+- Search intent angle (choose ONE, rotate for variety):
+  • Informational: "how to [do X]", "what is [X]", "[X] explained"
+  • Commercial: "best [X] for [Y]", "[X] vs [Y]", "how much does [X] cost"
+  • Problem-solving: "why [X] isn't working", "how to fix [X]", "[X] mistakes to avoid"
+  • Local: "[X] in Dubai/Abu Dhabi/Sharjah", "UAE [X] guide"
 ${avoidSection}
 
-GREAT TOPIC EXAMPLES:
-- "How to Get Your Dubai Beauty Salon Found on Google (2025 Guide)"
-- "5 Website Mistakes Abu Dhabi Dental Clinics Keep Making"
-- "WhatsApp Click-to-Chat for UAE Restaurants: Step-by-Step Guide"
-- "How Much Does a Website Cost in UAE? Honest Breakdown for 2025"
-- "Online Booking Systems for Sharjah Spas: What You Need to Know"
+PROVEN HIGH-TRAFFIC TOPIC PATTERNS:
+- "How Much Does a [Business] Website Cost in UAE? (Honest 2025 Breakdown)"
+- "Why Your [City] [Business] Isn't Showing Up on Google (And How to Fix It)"
+- "Website vs Instagram: What Actually Works for [Business Type] in UAE"
+- "The Complete Guide to [Feature] for UAE [Business Type]s"
+- "[Number] Things Every [Business Type] Website in UAE Must Have"
+- "How to Get More [Business Type] Customers in [City] Using Your Website"
 
-RETURN this exact JSON structure (no extra fields, no markdown, pure JSON):
+STEP 2 — GENERATE THE ARTICLE:
+Write with these Google E-E-A-T signals built in:
+✓ Specific UAE-local details: real platforms (Noon, Careem, Talabat, Tabby, Tamara), real payment processors (Mashreq, Emirates NBD, Network International), real UAE context (DED licence, Abu Dhabi DED, VAT, mainland/freezone)
+✓ Concrete numbers: costs, percentages, timeframes (even if illustrative, make them realistic)
+✓ One honest trade-off or limitation per article — this is what separates trusted content from promotional fluff
+✓ Named examples (composite, illustrative business names are fine: "Mariam's Tailoring in Deira", "Al Noor Dental Clinic, Sharjah")
+✓ Actionable specifics: exact steps, not vague advice like "optimise your website"
+
+RETURN pure JSON only (no markdown code fences, no explanation before or after):
 {
-  "title": "Compelling H1 title with focus keyword — 50-70 chars ideal",
+  "title": "Specific, curiosity-driven title with focus keyword — 55-70 chars",
   "slug": "url-slug-max-65-chars-lowercase-hyphens-only",
-  "focusKeyword": "main 3-5 word search phrase",
-  "metaTitle": "SEO title max 58 chars — end with | Brixel",
-  "metaDescription": "Exactly 150-158 chars. Include focus keyword + clear benefit + soft CTA",
-  "excerpt": "1-2 sentences. Summarises the article value clearly.",
+  "focusKeyword": "3-5 word phrase people actually type into Google",
+  "lsiKeywords": ["related term 1", "related term 2", "related term 3", "related term 4", "related term 5"],
+  "metaTitle": "Max 58 chars. Focus keyword near start. End with | Brixel",
+  "metaDescription": "EXACTLY 150-158 chars. Focus keyword in first 10 words. Specific benefit. Subtle CTA. Count the characters.",
+  "excerpt": "2 punchy sentences. What will the reader know or be able to do after reading this?",
   "tags": ["tag1", "tag2", "tag3", "tag4"],
-  "coverImageQuery": "2-4 word pexels search — generic (e.g. 'beauty salon interior', 'restaurant owner laptop')",
-  "readingMins": 5,
+  "coverImageQuery": "2-4 word pexels search — show the business type (e.g. 'salon owner smiling', 'restaurant kitchen busy')",
+  "readingMins": 6,
   "content": {
-    "intro": "80-120 words. Hook + problem statement. Focus keyword in first 50 words. Relatable to the target business owner.",
+    "intro": "100-140 words. NEVER start with 'In today's digital world' or 'As a business owner'. Open with a specific scenario, surprising stat, or direct question. Weave focus keyword into first 2 sentences naturally. End with a clear promise of what this article covers.",
     "sections": [
       {
-        "h2": "Section heading (include keyword variation)",
-        "paragraphs": ["60-90 word paragraph", "60-90 word paragraph"],
-        "list": ["Optional bullet 1", "Bullet 2", "Bullet 3", "Bullet 4"],
-        "callout": "Optional 1-2 sentence highlight box — a surprising stat or key insight"
+        "h2": "Specific, descriptive H2 — include a keyword variation. Reader knows exactly what they'll learn.",
+        "paragraphs": ["80-110 words. Specific detail, local example, or data point. Write like you're explaining to a smart friend.", "70-100 words. Can challenge a common assumption or add a nuance."],
+        "list": ["Specific, actionable item — not vague advice", "Item with a real detail or number", "Item 3", "Item 4"],
+        "callout": "1-2 sentences. A surprising stat, an honest trade-off, or a counter-intuitive insight. This is what readers screenshot and share."
       }
     ],
-    "conclusion": "60-80 words. Reinforce main message, set up the CTA naturally.",
-    "ctaHeading": "Action-oriented H2 — e.g. 'Ready to Get Your Salon Online?'",
-    "ctaText": "60-80 words. Warm, friendly. Mention free quote, UAE team, WhatsApp. Naturally reference the most relevant Brixel package and its from-price."
+    "conclusion": "70-90 words. Avoid 'In conclusion'. Summarise the ONE most important takeaway. Give the reader a specific first action to take this week — not 'contact a web designer' but something they can do themselves first.",
+    "ctaHeading": "Natural H2 tied to the article topic — e.g. 'Ready to Get Your [City] [Business] Online?'",
+    "ctaText": "80-100 words. Reference the specific business type from the article. Name the most relevant Brixel package and price naturally. Mention UAE team, free quote, WhatsApp. Sound like a recommendation from a knowledgeable friend.",
+    "faqs": [
+      {
+        "question": "A real question this business owner would type into Google — include location and business type",
+        "answer": "Direct, specific answer in 40-60 words. Gives genuine value. Can mention Brixel once naturally."
+      },
+      {
+        "question": "Second FAQ — a common concern or 'how much does X cost' question",
+        "answer": "40-60 words with a specific number or range."
+      },
+      {
+        "question": "Third FAQ — a 'how long does X take' or 'do I need X' question",
+        "answer": "40-60 words."
+      },
+      {
+        "question": "Fourth FAQ — a comparison or 'what's the difference between X and Y' question",
+        "answer": "40-60 words."
+      }
+    ]
   }
 }
 
-REQUIREMENTS:
+NON-NEGOTIABLE RULES:
 - Exactly 4-5 sections
-- Total ~800-950 words across all fields
-- Focus keyword in: title, intro paragraph, 2+ H2 headings, metaDescription
-- At least one section specifically mentions Brixel package(s) by name and price
-- UAE-specific details: WhatsApp, Tabby/Tamara, Arabic+English where relevant
-- Plain language — if you'd explain it differently to a non-technical person, do that
-- No hype words: "revolutionary", "game-changing", "leverage", "seamless"`;
+- 1000-1200 total words (intro + all sections + conclusion + ctaText combined)
+- Focus keyword in: title, first 2 sentences of intro, 2+ H2s, metaDescription
+- Mention at least 2 real UAE platforms, brands, or government bodies
+- At least 1 section with a step-by-step numbered list (use the "list" field)
+- At least 2 callouts with genuine insights
+- Exactly 4 FAQs — these power Google FAQ rich snippets in search results
+- lsiKeywords: 5 related terms that would appear naturally in a well-researched article on this topic
+- BANNED phrases: "In today's digital world", "In conclusion", "Furthermore", "It's worth noting", "game-changing", "revolutionary", "seamless", "robust", "leverage", "cutting-edge", "state-of-the-art"
+- BANNED openers: Starting any paragraph with "Additionally", "Moreover", "Furthermore"`;
 
   const response = await client.chat.completions.create({
     model: process.env.GROQ_MODEL ?? "llama-3.3-70b-versatile",

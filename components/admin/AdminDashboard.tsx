@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -560,26 +560,41 @@ function PackageManager({ packages, refresh }: { packages: PackageDef[]; refresh
 /* ---- Blog / SEO manager ---- */
 function BlogManager({ articles, refresh }: { articles: any[]; refresh: () => void }) {
   const [generating, setGenerating] = useState(false);
-  const [genMsg, setGenMsg] = useState("");
+  const [genMsg, setGenMsg]         = useState("");
+  const [autoPublish, setAutoPublish] = useState<boolean | null>(null); // null = loading
 
-  const published = articles.filter((a) => a.status === "published").length;
-  const drafts = articles.filter((a) => a.status === "draft").length;
-  const totalViews = articles.reduce((s: number, a: any) => s + (a.views ?? 0), 0);
+  // Load current setting on mount
+  useEffect(() => {
+    fetch("/api/admin/settings?key=blog_auto_publish")
+      .then((r) => r.json())
+      .then((d) => setAutoPublish(d.value === "true"))
+      .catch(() => setAutoPublish(false));
+  }, []);
+
+  async function toggleAutoPublish() {
+    const next = !autoPublish;
+    setAutoPublish(next);
+    await fetch("/api/admin/settings", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ key: "blog_auto_publish", value: String(next) }),
+    });
+  }
 
   async function generateNow() {
     setGenerating(true);
-    setGenMsg("⏳ Writing article with AI… this takes ~20 seconds");
+    setGenMsg("⏳ Writing article with AI — this takes ~20 seconds…");
     try {
-      const res = await fetch("/api/admin/generate-article", { method: "POST" });
+      const res  = await fetch("/api/admin/generate-article", { method: "POST" });
       const data = await res.json();
       if (data.ok) {
-        setGenMsg(`✅ Published: "${data.title}"`);
+        setGenMsg(`✅ ${data.status === "published" ? "Published" : "Saved as draft"}: "${data.title}"`);
         refresh();
       } else {
         setGenMsg(`❌ ${data.error ?? "Unknown error"}`);
       }
     } catch {
-      setGenMsg("❌ Network error — is the dev server running?");
+      setGenMsg("❌ Network error");
     } finally {
       setGenerating(false);
     }
@@ -600,18 +615,54 @@ function BlogManager({ articles, refresh }: { articles: any[]; refresh: () => vo
     refresh();
   }
 
+  const published  = articles.filter((a) => a.status === "published").length;
+  const drafts     = articles.filter((a) => a.status === "draft").length;
+  const totalViews = articles.reduce((s: number, a: any) => s + (a.views ?? 0), 0);
+
   return (
     <div>
-      {/* Stats row */}
+      {/* Stats */}
       <div className="mb-5 grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <Kpi n={published} l="Published articles" d="Live on the blog" />
-        <Kpi n={totalViews} l="Total article views" d="Across all posts" />
-        <Kpi n={drafts} l="Drafts" d="Not yet live" />
+        <Kpi n={published}     l="Published"     d="Live on the blog" />
+        <Kpi n={drafts}        l="Awaiting review" d="Ready to publish" />
+        <Kpi n={totalViews}    l="Total views"   d="Across all posts" />
         <Kpi n={articles.length} l="Total articles" d="All time" />
       </div>
 
-      {/* Actions */}
-      <div className="mb-5 flex flex-wrap items-center gap-3">
+      {/* Auto-publish toggle card */}
+      <div className="card mb-5 flex flex-wrap items-center gap-4 p-5">
+        <div className="flex-1 min-w-[220px]">
+          <div className="font-head text-[15px] font-bold text-teal">
+            {autoPublish ? "🟢 Auto-publish is ON" : "🟡 Draft mode is ON"}
+          </div>
+          <p className="mt-0.5 text-[13px] text-ink-soft">
+            {autoPublish
+              ? "New AI articles go live immediately — no review needed."
+              : "New AI articles are saved as drafts. You read & approve before they go live."}
+          </p>
+        </div>
+        <div className="flex items-center gap-3">
+          <span className="text-[13px] text-ink-soft">Draft</span>
+          <button
+            onClick={toggleAutoPublish}
+            disabled={autoPublish === null}
+            className={`relative h-7 w-12 rounded-full transition-colors duration-200 ${
+              autoPublish ? "bg-teal" : "bg-mist-deep"
+            }`}
+            aria-label="Toggle auto-publish"
+          >
+            <span
+              className={`absolute top-0.5 h-6 w-6 rounded-full bg-white shadow transition-all duration-200 ${
+                autoPublish ? "left-[22px]" : "left-0.5"
+              }`}
+            />
+          </button>
+          <span className="text-[13px] text-ink-soft">Auto-publish</span>
+        </div>
+      </div>
+
+      {/* Generate + view */}
+      <div className="mb-4 flex flex-wrap items-center gap-3">
         <button
           onClick={generateNow}
           disabled={generating}
@@ -622,27 +673,39 @@ function BlogManager({ articles, refresh }: { articles: any[]; refresh: () => vo
         <a href="/blog" target="_blank" rel="noreferrer" className="btn btn-ghost btn-sm">
           <Globe size={15} /> View blog ↗
         </a>
-        <p className="text-xs text-ink-soft">
-          Auto-runs daily at 7 AM UAE time via Vercel Cron. You can also trigger manually above.
-        </p>
+        <span className="text-[12px] text-ink-faint">
+          Cron runs daily at 7 AM UAE time. Manual trigger above.
+        </span>
       </div>
 
       {genMsg && (
-        <div className="mb-4 rounded-lg border border-line bg-cloud px-4 py-3 text-sm">{genMsg}</div>
+        <div className="mb-4 rounded-lg border border-line bg-cloud px-4 py-3 text-[13.5px]">
+          {genMsg}
+        </div>
+      )}
+
+      {/* Drafts quick-action banner */}
+      {drafts > 0 && (
+        <div className="mb-4 flex items-center gap-3 rounded-xl border border-amber/40 bg-[#fdeccb]/50 px-4 py-3 text-[13.5px]">
+          <span className="font-head font-semibold text-[#92560a]">
+            {drafts} draft{drafts > 1 ? "s" : ""} awaiting review
+          </span>
+          <span className="text-[#92560a]">— scroll down, change status to "Published" when ready.</span>
+        </div>
       )}
 
       {/* Articles table */}
       <div className="card overflow-hidden">
-        <Table head={["Title", "Focus keyword", "Tags", "Status", "Views", "Published", "Actions"]}>
+        <Table head={["Title", "Keyword", "Tags", "Status", "Views", "When", "Actions"]}>
           {articles.map((a: any) => (
-            <tr key={a.id}>
+            <tr key={a.id} className={a.status === "draft" ? "bg-[#fdeccb]/20" : ""}>
               <Td>
                 <div className="max-w-[260px]">
-                  <b className="block font-head text-[13.5px] text-teal line-clamp-2">{a.title}</b>
+                  <b className="block font-head text-[13px] text-teal line-clamp-2 leading-snug">{a.title}</b>
                   <span className="text-[11px] text-ink-faint">/blog/{a.slug}</span>
                 </div>
               </Td>
-              <Td><span className="text-[12.5px] text-ink-soft">{a.focusKeyword}</span></Td>
+              <Td><span className="text-[12px] text-ink-soft">{a.focusKeyword}</span></Td>
               <Td>
                 <div className="flex flex-wrap gap-1">
                   {((a.tags ?? []) as string[]).slice(0, 2).map((t: string) => (
@@ -654,7 +717,13 @@ function BlogManager({ articles, refresh }: { articles: any[]; refresh: () => vo
                 <select
                   value={a.status}
                   onChange={(e) => setStatus(a.id, e.target.value)}
-                  className="rounded-lg border border-line px-2 py-1.5 text-[12.5px]"
+                  className={`rounded-lg border px-2 py-1.5 text-[12px] font-semibold ${
+                    a.status === "published"
+                      ? "border-[#1c7a43] bg-[#d6f0df] text-[#1c7a43]"
+                      : a.status === "draft"
+                      ? "border-[#92560a] bg-[#fdeccb] text-[#92560a]"
+                      : "border-line bg-cloud text-ink-soft"
+                  }`}
                 >
                   <option value="published">Published</option>
                   <option value="draft">Draft</option>
@@ -662,11 +731,11 @@ function BlogManager({ articles, refresh }: { articles: any[]; refresh: () => vo
                 </select>
               </Td>
               <Td>
-                <span className="flex items-center gap-1 text-[13px] text-ink-soft">
-                  <Eye size={13} /> {a.views ?? 0}
+                <span className="flex items-center gap-1 text-[12.5px] text-ink-soft">
+                  <Eye size={12} /> {a.views ?? 0}
                 </span>
               </Td>
-              <Td><span className="text-[12.5px] text-ink-soft">{timeAgo(a.createdAt)}</span></Td>
+              <Td><span className="text-[12px] text-ink-soft">{timeAgo(a.createdAt)}</span></Td>
               <Td>
                 <div className="flex gap-1.5">
                   <a

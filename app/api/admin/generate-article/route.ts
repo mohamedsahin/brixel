@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { isAdminAuthed } from "@/lib/admin-auth";
 import { generateArticle } from "@/lib/articleGenerator";
+import { isAutoPublish } from "@/lib/settings";
 import { prisma } from "@/lib/prisma";
 
 export const runtime = "nodejs";
@@ -14,7 +15,8 @@ export async function POST() {
   }
 
   try {
-    const article = await generateArticle();
+    const [article, autoPublish] = await Promise.all([generateArticle(), isAutoPublish()]);
+    const status = autoPublish ? "published" : "draft";
 
     let slug = article.slug;
     const collision = await prisma.article.findUnique({ where: { slug } });
@@ -29,16 +31,18 @@ export async function POST() {
         focusKeyword:    article.focusKeyword,
         metaTitle:       article.metaTitle,
         metaDescription: article.metaDescription,
-        tags:            article.tags,
+        tags:            [...(article.tags ?? []), ...(article.lsiKeywords ?? [])].slice(0, 8),
         coverImageQuery: article.coverImageQuery ?? "small business",
         readingMins:     article.readingMins,
-        status:          "published",
+        status,
       },
     });
 
-    try { revalidatePath("/blog"); } catch {}
+    if (status === "published") {
+      try { revalidatePath("/blog"); } catch {}
+    }
 
-    return NextResponse.json({ ok: true, slug: created.slug, title: created.title });
+    return NextResponse.json({ ok: true, slug: created.slug, title: created.title, status });
   } catch (err) {
     console.error("[admin/generate-article]", err);
     return NextResponse.json({ error: String(err) }, { status: 500 });

@@ -3,7 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowRight, Clock, Tag, Calendar, ChevronRight, Phone } from "lucide-react";
 import { getArticle, getAllArticleSlugs, getArticles } from "@/lib/data";
-import { coverImageUrl, type ArticleContent, type ArticleSection } from "@/lib/articleGenerator";
+import { coverImageUrl, type ArticleContent, type ArticleSection, type ArticleFaq } from "@/lib/articleGenerator";
 import { SmartImage } from "@/components/SmartImage";
 import { ArticleCard } from "@/components/ArticleCard";
 import { WhatsAppIcon } from "@/components/WhatsAppIcon";
@@ -60,8 +60,10 @@ export default async function ArticlePage({ params }: { params: { slug: string }
   });
   const imgUrl = coverImageUrl(article.coverImageQuery, 1200, 630);
 
-  // JSON-LD Article schema for Google rich snippets
-  const jsonLd = {
+  const faqs: ArticleFaq[] = (content.faqs ?? []) as ArticleFaq[];
+
+  // Article JSON-LD schema
+  const jsonLdArticle = {
     "@context": "https://schema.org",
     "@type": "Article",
     headline: article.title,
@@ -80,15 +82,39 @@ export default async function ArticlePage({ params }: { params: { slug: string }
     keywords: tags.join(", "),
   };
 
+  // FAQ JSON-LD — powers "People also ask" rich snippets in Google
+  const jsonLdFaq = faqs.length > 0 ? {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: faqs.map((faq) => ({
+      "@type": "Question",
+      name: faq.question,
+      acceptedAnswer: { "@type": "Answer", text: faq.answer },
+    })),
+  } : null;
+
+  // BreadcrumbList schema
+  const jsonLdBreadcrumb = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Home", item: base },
+      { "@type": "ListItem", position: 2, name: "Blog", item: `${base}/blog` },
+      { "@type": "ListItem", position: 3, name: article.title, item: `${base}/blog/${article.slug}` },
+    ],
+  };
+
+  // Keep jsonLd as alias for backward compat in the template
+  const jsonLd = jsonLdArticle;
+
   const relatedArticles = related.filter((a) => a.slug !== article.slug).slice(0, 3);
 
   return (
     <>
-      {/* JSON-LD */}
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-      />
+      {/* JSON-LD structured data — Article + FAQ rich snippets + Breadcrumb */}
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      {jsonLdFaq && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLdFaq) }} />}
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLdBreadcrumb) }} />
 
       {/* Breadcrumb */}
       <div className="bg-mist">
@@ -181,6 +207,30 @@ export default async function ArticlePage({ params }: { params: { slug: string }
                   <p className="mt-8 text-[16px] leading-[1.8] text-ink-soft sm:text-[17px]">
                     {content.conclusion}
                   </p>
+                )}
+
+                {/* FAQ section — powers Google "People also ask" rich snippets */}
+                {faqs.length > 0 && (
+                  <div className="mt-10">
+                    <h2 className="text-[22px] font-extrabold text-teal sm:text-[26px]">
+                      Frequently Asked Questions
+                    </h2>
+                    <div className="mt-4 flex flex-col gap-3">
+                      {faqs.map((faq: ArticleFaq, i: number) => (
+                        <details key={i} className="group rounded-xl border border-line bg-white overflow-hidden" open={i === 0}>
+                          <summary className="flex cursor-pointer list-none items-center gap-3 px-5 py-4 [&::-webkit-details-marker]:hidden">
+                            <span className="flex-1 font-head text-[15px] font-bold text-teal">{faq.question}</span>
+                            <svg className="flex-none text-aqua transition-transform duration-200 group-open:rotate-180" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                              <path d="m6 9 6 6 6-6" />
+                            </svg>
+                          </summary>
+                          <div className="border-t border-line px-5 pb-4 pt-3 text-[14.5px] leading-relaxed text-ink-soft">
+                            {faq.answer}
+                          </div>
+                        </details>
+                      ))}
+                    </div>
+                  </div>
                 )}
 
                 {/* CTA section */}
