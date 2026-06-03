@@ -44,7 +44,7 @@ export default async function HomePage() {
             </div>
             <Reveal>
               <div className="relative">
-                <SmartImage src={IMAGES.hero} label="happy small-business owner" className="h-[420px] rounded-3xl" />
+                <SmartImage src={IMAGES.hero} label="happy small-business owner" className="h-[420px] rounded-3xl" priority />
                 <div className="card absolute -start-4 bottom-6 flex animate-bob items-center gap-3 px-4 py-3.5 shadow-lift">
                   <span className="grid h-10 w-10 place-items-center rounded-full bg-wa text-white">
                     <WhatsAppIcon size={20} />
