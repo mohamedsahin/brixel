@@ -42,6 +42,7 @@ export function Footer() {
           <FooterAccordion title="Company">
             <FLink href="/how-it-works">How it works</FLink>
             <FLink href="/work">Our work</FLink>
+            <FLink href="/blog">Blog & guides</FLink>
             <FLink href="/about">About</FLink>
             <FLink href="/faq">FAQ</FLink>
           </FooterAccordion>

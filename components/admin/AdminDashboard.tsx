@@ -6,6 +6,7 @@ import Link from "next/link";
 import {
   LayoutGrid, Users, PhoneIncoming, MessageCircle, BarChart3, Box,
   Bell, Search, Phone, Mail, Check, Bot, Star, Clock, X,
+  Newspaper, Eye, Trash2, Globe, Zap,
 } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { WhatsAppIcon } from "@/components/WhatsAppIcon";
@@ -20,6 +21,7 @@ type Dash = {
   conversations: any[];
   notifications: any[];
   eventCounts: Record<string, number>;
+  articles: any[];
   ok: boolean;
 };
 
@@ -41,6 +43,7 @@ const TABS = [
   ["conversations", MessageCircle, "Conversations"],
   ["analytics", BarChart3, "Analytics"],
   ["packages", Box, "Packages"],
+  ["blog", Newspaper, "Blog / SEO"],
 ] as const;
 
 export function AdminDashboard({ data, packages }: { data: Dash; packages: PackageDef[] }) {
@@ -123,6 +126,7 @@ export function AdminDashboard({ data, packages }: { data: Dash; packages: Packa
         {tab === "conversations" && <Conversations data={data} pkgByKey={pkgByKey} openConvo={setConvoId} />}
         {tab === "analytics" && <Analytics data={data} packages={packages} pkgByKey={pkgByKey} />}
         {tab === "packages" && <PackageManager packages={packages} refresh={refresh} />}
+        {tab === "blog" && <BlogManager articles={data.articles || []} refresh={refresh} />}
       </main>
 
       {leadId && <LeadDrawer lead={data.leads.find((l) => l.id === leadId)} pkgByKey={pkgByKey} onClose={() => setLeadId(null)} refresh={refresh} />}
@@ -548,6 +552,151 @@ function PackageManager({ packages, refresh }: { packages: PackageDef[]; refresh
             )}
           </div>
         ))}
+      </div>
+    </div>
+  );
+}
+
+/* ---- Blog / SEO manager ---- */
+function BlogManager({ articles, refresh }: { articles: any[]; refresh: () => void }) {
+  const [generating, setGenerating] = useState(false);
+  const [genMsg, setGenMsg] = useState("");
+
+  const published = articles.filter((a) => a.status === "published").length;
+  const drafts = articles.filter((a) => a.status === "draft").length;
+  const totalViews = articles.reduce((s: number, a: any) => s + (a.views ?? 0), 0);
+
+  async function generateNow() {
+    setGenerating(true);
+    setGenMsg("⏳ Writing article with AI… this takes ~20 seconds");
+    try {
+      const res = await fetch("/api/admin/generate-article", { method: "POST" });
+      const data = await res.json();
+      if (data.ok) {
+        setGenMsg(`✅ Published: "${data.title}"`);
+        refresh();
+      } else {
+        setGenMsg(`❌ ${data.error ?? "Unknown error"}`);
+      }
+    } catch {
+      setGenMsg("❌ Network error — is the dev server running?");
+    } finally {
+      setGenerating(false);
+    }
+  }
+
+  async function setStatus(id: string, status: string) {
+    await fetch(`/api/admin/articles/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status }),
+    });
+    refresh();
+  }
+
+  async function deleteArticle(id: string, title: string) {
+    if (!window.confirm(`Delete "${title}"? This cannot be undone.`)) return;
+    await fetch(`/api/admin/articles/${id}`, { method: "DELETE" });
+    refresh();
+  }
+
+  return (
+    <div>
+      {/* Stats row */}
+      <div className="mb-5 grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <Kpi n={published} l="Published articles" d="Live on the blog" />
+        <Kpi n={totalViews} l="Total article views" d="Across all posts" />
+        <Kpi n={drafts} l="Drafts" d="Not yet live" />
+        <Kpi n={articles.length} l="Total articles" d="All time" />
+      </div>
+
+      {/* Actions */}
+      <div className="mb-5 flex flex-wrap items-center gap-3">
+        <button
+          onClick={generateNow}
+          disabled={generating}
+          className="btn btn-amber btn-sm"
+        >
+          <Zap size={15} /> {generating ? "Generating…" : "Generate article now"}
+        </button>
+        <a href="/blog" target="_blank" rel="noreferrer" className="btn btn-ghost btn-sm">
+          <Globe size={15} /> View blog ↗
+        </a>
+        <p className="text-xs text-ink-soft">
+          Auto-runs daily at 7 AM UAE time via Vercel Cron. You can also trigger manually above.
+        </p>
+      </div>
+
+      {genMsg && (
+        <div className="mb-4 rounded-lg border border-line bg-cloud px-4 py-3 text-sm">{genMsg}</div>
+      )}
+
+      {/* Articles table */}
+      <div className="card overflow-hidden">
+        <Table head={["Title", "Focus keyword", "Tags", "Status", "Views", "Published", "Actions"]}>
+          {articles.map((a: any) => (
+            <tr key={a.id}>
+              <Td>
+                <div className="max-w-[260px]">
+                  <b className="block font-head text-[13.5px] text-teal line-clamp-2">{a.title}</b>
+                  <span className="text-[11px] text-ink-faint">/blog/{a.slug}</span>
+                </div>
+              </Td>
+              <Td><span className="text-[12.5px] text-ink-soft">{a.focusKeyword}</span></Td>
+              <Td>
+                <div className="flex flex-wrap gap-1">
+                  {((a.tags ?? []) as string[]).slice(0, 2).map((t: string) => (
+                    <span key={t} className="rounded-full bg-mist px-2 py-0.5 text-[11px] text-teal">{t}</span>
+                  ))}
+                </div>
+              </Td>
+              <Td>
+                <select
+                  value={a.status}
+                  onChange={(e) => setStatus(a.id, e.target.value)}
+                  className="rounded-lg border border-line px-2 py-1.5 text-[12.5px]"
+                >
+                  <option value="published">Published</option>
+                  <option value="draft">Draft</option>
+                  <option value="archived">Archived</option>
+                </select>
+              </Td>
+              <Td>
+                <span className="flex items-center gap-1 text-[13px] text-ink-soft">
+                  <Eye size={13} /> {a.views ?? 0}
+                </span>
+              </Td>
+              <Td><span className="text-[12.5px] text-ink-soft">{timeAgo(a.createdAt)}</span></Td>
+              <Td>
+                <div className="flex gap-1.5">
+                  <a
+                    href={`/blog/${a.slug}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    title="View on site"
+                    className="grid h-8 w-8 place-items-center rounded-lg border border-line text-teal hover:bg-mist"
+                  >
+                    <Globe size={14} />
+                  </a>
+                  <button
+                    onClick={() => deleteArticle(a.id, a.title)}
+                    title="Delete"
+                    className="grid h-8 w-8 place-items-center rounded-lg border border-line text-red-400 hover:bg-red-50"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+              </Td>
+            </tr>
+          ))}
+          {articles.length === 0 && (
+            <tr>
+              <td colSpan={7} className="p-10 text-center text-ink-soft">
+                No articles yet. Click &ldquo;Generate article now&rdquo; to create the first one.
+              </td>
+            </tr>
+          )}
+        </Table>
       </div>
     </div>
   );

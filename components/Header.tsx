@@ -32,6 +32,7 @@ export function Header() {
     { href: "/packages", label: t.nav.packages },
     { href: "/how-it-works", label: t.nav.how },
     { href: "/work", label: t.nav.work },
+    { href: "/blog", label: "Blog" },
     { href: "/about", label: t.nav.about },
     { href: "/faq", label: t.nav.faq },
   ];

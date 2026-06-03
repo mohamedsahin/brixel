@@ -124,3 +124,25 @@ model AdminUser {
   email String @unique
   role  String @default("owner")
 }
+
+model Article {
+  id              String   @id @default(cuid())
+  title           String
+  slug            String   @unique
+  excerpt         String
+  content         Json
+  focusKeyword    String
+  metaTitle       String
+  metaDescription String
+  tags            Json     // string[]
+  coverImageQuery String   @default("small business website")
+  readingMins     Int      @default(5)
+  status          String   @default("published") // published | draft | archived
+  views           Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([status])
+  @@index([createdAt])
+  @@index([slug])
+}
