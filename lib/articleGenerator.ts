@@ -231,39 +231,81 @@ NON-NEGOTIABLE RULES:
   // Clamp reading time
   article.readingMins = Math.max(3, Math.min(12, article.readingMins ?? 5));
 
+  // Fetch a real relevant image from Pexels API and store the URL directly.
+  // If no API key, falls back to the keyword→ID map at render time.
+  const pexelsUrl = await fetchPexelsImage(article.coverImageQuery ?? "small business owner");
+  if (pexelsUrl) article.coverImageQuery = pexelsUrl;
+
   return article;
 }
 
-// Compute Pexels cover URL from a freeform query string
-export function coverImageUrl(query: string, w = 900, h = 560): string {
-  const encoded = encodeURIComponent(query.trim().toLowerCase());
-  // Use a deterministic Pexels search CDN approach
-  const seeds: Record<string, string> = {
-    "beauty salon": "3065171",
-    "dental clinic": "305565",
-    "restaurant": "262978",
-    "bakery": "1775043",
-    "pharmacy": "3683098",
-    "gym": "1552252",
-    "real estate": "1396122",
-    "photography": "1366957",
-    "laptop office": "3184291",
-    "small business": "3184465",
-    "website design": "196644",
-    "team meeting": "1181406",
-    "mobile phone": "607812",
-    "online shop": "264636",
-    "coffee shop": "683039",
-  };
+// ─── Pexels API image fetch ───────────────────────────────────────────────────
 
-  // Find the best matching seed
-  const lower = query.toLowerCase();
-  for (const [key, id] of Object.entries(seeds)) {
-    if (lower.includes(key.split(" ")[0])) {
+async function fetchPexelsImage(query: string): Promise<string | null> {
+  const apiKey = process.env.PEXELS_API_KEY;
+  if (!apiKey) return null;
+
+  try {
+    const url = `https://api.pexels.com/v1/search?query=${encodeURIComponent(query)}&per_page=8&orientation=landscape`;
+    const res = await fetch(url, {
+      headers: { Authorization: apiKey },
+      next: { revalidate: 0 },
+    });
+    if (!res.ok) return null;
+    const data = await res.json() as { photos?: { src: { large2x: string } }[] };
+    // Pick a random photo from the top 8 for variety
+    const photos = data.photos ?? [];
+    if (!photos.length) return null;
+    const pick = photos[Math.floor(Math.random() * Math.min(photos.length, 5))];
+    return pick.src.large2x ?? null;
+  } catch {
+    return null;
+  }
+}
+
+// ─── Render-time image URL resolver ──────────────────────────────────────────
+// If a real URL is stored (from Pexels API), use it directly.
+// Otherwise fall back to the hardcoded keyword → photo-ID map.
+
+const FALLBACK_IDS: Record<string, string> = {
+  "beauty":    "3065171",
+  "salon":     "3065171",
+  "dental":    "305565",
+  "clinic":    "305565",
+  "restaurant":"262978",
+  "food":      "262978",
+  "bakery":    "1775043",
+  "cake":      "1775043",
+  "pharmacy":  "3683098",
+  "gym":       "1552252",
+  "fitness":   "1552252",
+  "real":      "1396122",
+  "property":  "1396122",
+  "photo":     "1366957",
+  "shop":      "264636",
+  "store":     "264636",
+  "coffee":    "683039",
+  "cafe":      "683039",
+  "office":    "3184291",
+  "laptop":    "3184291",
+  "team":      "1181406",
+  "meeting":   "1181406",
+  "mobile":    "607812",
+  "phone":     "607812",
+};
+
+export function coverImageUrl(queryOrUrl: string, w = 900, h = 560): string {
+  // A real Pexels URL stored at generation time — use directly
+  if (queryOrUrl.startsWith("https://")) return queryOrUrl;
+
+  // Keyword → hardcoded fallback map
+  const lower = queryOrUrl.toLowerCase();
+  for (const [word, id] of Object.entries(FALLBACK_IDS)) {
+    if (lower.includes(word)) {
       return `https://images.pexels.com/photos/${id}/pexels-photo-${id}.jpeg?auto=compress&cs=tinysrgb&w=${w}&h=${h}&dpr=1`;
     }
   }
 
-  // Fallback: generic business photo
+  // Final fallback — always works
   return `https://images.pexels.com/photos/3184291/pexels-photo-3184291.jpeg?auto=compress&cs=tinysrgb&w=${w}&h=${h}&dpr=1`;
 }
